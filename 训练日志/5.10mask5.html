@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>5.10mask5 实验全记录</title>
+  <style>
+    body { margin: 0; font-family: "Segoe UI","Microsoft YaHei",sans-serif; background:#0f172a; color:#e2e8f0; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .card { background:#111b34; border:1px solid #334155; border-radius:12px; padding:16px; margin-bottom:14px; }
+    h1,h2,h3 { margin: 0 0 10px; }
+    p,li { color:#cbd5e1; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th,td { border:1px solid #334155; padding:8px 10px; text-align:left; vertical-align: top; }
+    th { background:#1e293b; }
+    .ok { color:#4ade80; } .warn { color:#fbbf24; } .bad { color:#fb7185; }
+    .mono { font-family: ui-monospace,Consolas,monospace; white-space: pre-wrap; color:#cbd5e1; }
+    code { background:#0b1222; border:1px solid #334155; border-radius:6px; padding:1px 6px; color:#bfdbfe; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>5.10 mask5 实验全记录（可复现版）</h1>
+      <p>目标：在 BabyLM Strict 数据上，以 GPT2 基座进行 5% masked-objective 混合训练，并完成 zero-shot + finetuning 评测。</p>
+      <p>训练模型目录：<code>/home/language/babytext/experiments/gpt2-masked-objective/outputs/gpt2_mask5_run1/final</code></p>
+    </div>
+
+    <div class="card">
+      <h2>一眼看懂：训练方法</h2>
+      <table>
+        <thead><tr><th>模块</th><th>做法</th><th>目的</th></tr></thead>
+        <tbody>
+          <tr><td>模型</td><td>GPT2（AutoModelForCausalLM），从 BabyLM baseline 100M checkpoint 继续训练</td><td>在官方基线上做可控增量</td></tr>
+          <tr><td>目标函数</td><td><code>total=(1-a)*causal + a*masked</code>，mask5 使用 <code>a=0.05</code></td><td>平衡语言建模能力与掩码恢复能力</td></tr>
+          <tr><td>mask 采样</td><td><code>masked_ratio_sampling=0.05</code>，替换比例 80/10/10（mask/random/keep）</td><td>避免单一掩码模式过拟合</td></tr>
+          <tr><td>数据组织</td><td>Strict 六源语料，按 source word count 比例采样 batch</td><td>维持语料分布一致性</td></tr>
+          <tr><td>优化</td><td>AdamW + cosine + warmup，bf16，grad accumulation</td><td>稳定训练并控制显存</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>关键训练配置（mask5）</h2>
+      <table>
+        <thead><tr><th>参数</th><th>值</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td>learning_rate</td><td><code>5e-5</code></td><td>相对保守，优先稳定</td></tr>
+          <tr><td>batch_size_per_device</td><td><code>24</code></td><td>每卡 micro-batch</td></tr>
+          <tr><td>gradient_accumulation_steps</td><td><code>4</code></td><td>等效 batch 放大</td></tr>
+          <tr><td>max_sequence_length</td><td><code>256</code></td><td>固定块长</td></tr>
+          <tr><td>num_train_epochs</td><td><code>10</code></td><td>最多 10 epoch</td></tr>
+          <tr><td>max_words_seen</td><td><code>963,763,800</code></td><td>词预算上限</td></tr>
+          <tr><td>checkpoint</td><td>epoch + step(每5000) + best</td><td>best 由 epoch 平均 loss_total 决定</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>脚本改动历史（训练稳定性相关）</h2>
+      <ul>
+        <li>Scheduler 步数口径改为 optimizer-step，避免 warmup/cosine 错位。</li>
+        <li>断点续训记录 <code>optimizer_step</code>，并恢复 epoch 续训逻辑。</li>
+        <li>新增分项日志：<code>loss_total/loss_causal/loss_masked/masked_contrib_ratio</code>。</li>
+        <li>新增 <code>ckpt_best</code> 自动保存，避免只用最后一步 <code>final</code>。</li>
+        <li>新增 step-checkpoint 恢复时的 batch 跳过逻辑，减轻“像从头开始”的错觉。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>训练与评测用到的文件</h2>
+      <table>
+        <thead><tr><th>路径</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>experiments/gpt2-masked-objective/train_hybrid_gpt2.py</code></td><td>核心训练脚本</td></tr>
+          <tr><td><code>experiments/gpt2-masked-objective/run_train.py</code></td><td>训练入口包装脚本</td></tr>
+          <tr><td><code>experiments/gpt2-masked-objective/configs/run_mask5.json</code></td><td>mask5 参数</td></tr>
+          <tr><td><code>strict/scripts/eval_zero_shot.sh</code></td><td>zero-shot 评测入口</td></tr>
+          <tr><td><code>strict/scripts/eval_finetuning.sh</code></td><td>finetune 评测入口</td></tr>
+          <tr><td><code>strict/results/final/main/finetune/*/results.txt</code></td><td>finetune 结果文件</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>可复现命令（训练 / 续训 / 评测 / 回溯）</h2>
+      <p class="mono"># 训练（示例）
+cd ~/babytext/experiments/gpt2-masked-objective
+python run_train.py --model mask5 --project-root ~/babytext --num-workers 4 --logging-steps 20
+
+# 续训（示例：绝对路径 checkpoint）
+python run_train.py --model mask5 --project-root ~/babytext --resume-checkpoint /abs/path/to/ckpt_epoch_XX
+
+# zero-shot 评测
+cd ~/babytext/experiments/babylm-eval/strict
+bash scripts/eval_zero_shot.sh /home/language/babytext/experiments/gpt2-masked-objective/outputs/gpt2_mask5_run1/final causal
+
+# finetune 结果回溯
+find results/final/main/finetune -name "results.txt" -print -exec cat {} \;</p>
+    </div>
+
+    <div class="card">
+      <h2>Zero-shot 结果</h2>
+      <table>
+        <thead><tr><th>模块</th><th>分数</th><th>判断</th></tr></thead>
+        <tbody>
+          <tr><td>BLiMP (filtered)</td><td>71.84</td><td class="ok">正常</td></tr>
+          <tr><td>BLiMP Supplement</td><td>56.41</td><td class="warn">一般</td></tr>
+          <tr><td>EWoK</td><td>51.55</td><td class="warn">一般</td></tr>
+          <tr><td>COMPS</td><td>32.51</td><td class="bad">偏低</td></tr>
+          <tr><td>Entity Tracking</td><td>53.90</td><td class="warn">一般</td></tr>
+          <tr><td>Reading Eye / SPR</td><td>8.33 / 3.48</td><td class="warn">可用</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Finetuning 结果</h2>
+      <table>
+        <thead><tr><th>任务</th><th>结果</th><th>判断</th></tr></thead>
+        <tbody>
+          <tr><td>boolq</td><td>acc 0.6489 / f1 0.7389</td><td class="ok">正常</td></tr>
+          <tr><td>multirc</td><td>acc 0.5854 / f1 0.0703 / mcc 0.0917</td><td class="warn">偏弱</td></tr>
+          <tr><td>mrpc</td><td>acc 0.6814 / f1 0.8105 / mcc 0</td><td class="warn">MCC异常</td></tr>
+          <tr><td>mnli</td><td>acc 0.3570</td><td class="bad">偏低</td></tr>
+          <tr><td>rte / wsc / qqp</td><td>F1=0, MCC=0</td><td class="bad">异常（塌缩）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

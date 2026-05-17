@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mask10 run3/run4 最新结果汇总</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    h1, h2 {
+      margin: 0 0 10px 0;
+    }
+    p, li {
+      line-height: 1.65;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f9fafb;
+    }
+    code {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 1px 6px;
+      word-break: break-all;
+    }
+    .mono {
+      font-family: ui-monospace, Consolas, monospace;
+      white-space: pre-wrap;
+      background: #0b1020;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>mask10 run3/run4 最新结果汇总</h1>
+      <p>更新时间：2026-05-14（按你提供的服务器终端输出整理）</p>
+      <p>说明：这里的 run3 对应你当前线上命名 <code>mask10_rerun_best</code>。</p>
+    </div>
+
+    <div class="card">
+      <h2>关键路径总览</h2>
+      <table>
+        <thead>
+          <tr><th>类别</th><th>路径</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>run4 训练目录</td>
+            <td><code>/data0/language/babylm_runs/mask10_run4</code></td>
+            <td>包含 checkpoints / final / logs / run_summary.json</td>
+          </tr>
+          <tr>
+            <td>run4 快速检测结果</td>
+            <td><code>/data0/language/babylm_runs/mask10_run4/eval_run4_tasks.json</code></td>
+            <td>本地近似评测（max_samples=500）</td>
+          </tr>
+          <tr>
+            <td>run4 最佳 checkpoint</td>
+            <td><code>/data0/language/babylm_runs/mask10_run4/checkpoints/ckpt_best</code></td>
+            <td>run_summary 中记录的 best_checkpoint_dir</td>
+          </tr>
+          <tr>
+            <td>run3(=rerun) 模型软链接</td>
+            <td><code>/data0/language/babylm_eval_models/mask10_rerun_best</code></td>
+            <td>链接到 <code>gpt2_mask10_run1_rerun/checkpoints/ckpt_best</code></td>
+          </tr>
+          <tr>
+            <td>run3(=rerun) 官方评测目录</td>
+            <td><code>~/babytext/experiments/babylm-eval/strict/results/mask10_rerun_best</code></td>
+            <td>包含 finetune 各任务 results.txt</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>run4 训练摘要（run_summary.json）</h2>
+      <table>
+        <thead>
+          <tr><th>字段</th><th>值</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>config_path</td><td><code>/home/language/babytext/experiments/gpt2-masked-objective/configs/run_mask10_run4_taskfocus.json</code></td></tr>
+          <tr><td>training_data_path</td><td><code>/data0/language/babylm_runs/mask10_run4/data</code></td></tr>
+          <tr><td>masked_alpha / masked_ratio_sampling</td><td>0.1 / 0.1</td></tr>
+          <tr><td>global_step / optimizer_step</td><td>1030 / 257</td></tr>
+          <tr><td>words_seen</td><td>4,376,410</td></tr>
+          <tr><td>num_train_epochs</td><td>10</td></tr>
+          <tr><td>best_checkpoint_dir</td><td><code>/data0/language/babylm_runs/mask10_run4/checkpoints/ckpt_best</code></td></tr>
+          <tr><td>best_epoch_loss_total</td><td>4.019206776202304</td></tr>
+          <tr><td>final_model_dir</td><td><code>/data0/language/babylm_runs/mask10_run4/final</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>run4 快速检测结果（eval_run4_tasks.json）</h2>
+      <table>
+        <thead>
+          <tr><th>任务</th><th>分数</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MNLI</td><td>34.20</td></tr>
+          <tr><td>RTE</td><td>52.71</td></tr>
+          <tr><td>QQP</td><td>62.00</td></tr>
+          <tr><td>WSC</td><td>61.54</td></tr>
+        </tbody>
+      </table>
+      <p>模型路径：<code>/data0/language/babylm_runs/mask10_run4/checkpoints/ckpt_best</code></p>
+      <p>采样规模：<code>max_samples=500</code></p>
+    </div>
+
+    <div class="card">
+      <h2>run3（mask10_rerun_best）官方 finetune 结果</h2>
+      <table>
+        <thead>
+          <tr><th>任务</th><th>accuracy</th><th>f1</th><th>mcc</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>mnli</td><td>0.3569682151589242</td><td>-</td><td>-</td></tr>
+          <tr><td>rte</td><td>0.539568345323741</td><td>0.0</td><td>0.0</td></tr>
+          <tr><td>wsc</td><td>0.6153846153846154</td><td>0.0</td><td>0.0</td></tr>
+          <tr><td>mrpc</td><td>0.6813725490196079</td><td>0.8104956268221575</td><td>0.0</td></tr>
+          <tr><td>qqp</td><td>0.6277516695523127</td><td>0.0</td><td>0.0</td></tr>
+          <tr><td>multirc</td><td>0.6452145214521452</td><td>0.48687350835322196</td><td>0.25160523512330857</td></tr>
+          <tr><td>boolq</td><td>0.691131498470948</td><td>0.7711826008155868</td><td>0.3036715422615221</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>run3 vs run4 自动判优（当前可比口径）</h2>
+      <p>注意：run3 是官方 strict finetune，run4 目前是本地快速评测（max_samples=500），口径不完全一致。下面仅做“同任务数值对照”，用于方向判断，不作为最终榜单结论。</p>
+      <table>
+        <thead>
+          <tr><th>任务</th><th>run3 (official finetune)</th><th>run4 (quick eval)</th><th>当前领先</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MNLI</td><td>35.70%</td><td>34.20%</td><td>run3</td></tr>
+          <tr><td>RTE</td><td>53.96%</td><td>52.71%</td><td>run3</td></tr>
+          <tr><td>QQP</td><td>62.78%</td><td>62.00%</td><td>run3</td></tr>
+          <tr><td>WSC</td><td>61.54%</td><td>61.54%</td><td>持平</td></tr>
+        </tbody>
+      </table>
+      <p>自动结论：在可对齐的 4 个任务上，run3 暂时 3 项领先、1 项持平；run4 尚未显示出超越 run3 的证据。</p>
+      <p>下一步建议：先把 run4 按官方 strict pipeline 跑完 zero-shot + finetune，再做最终判优。</p>
+    </div>
+
+    <div class="card">
+      <h2>原始命令输出留档</h2>
+      <pre class="mono">run4 快速检测：
+cat /data0/language/babylm_runs/mask10_run4/eval_run4_tasks.json
+
+run4 训练摘要：
+cat /data0/language/babylm_runs/mask10_run4/run_summary.json
+
+run3(rerun)官方 finetune：
+find results/mask10_rerun_best -name "results.txt" -print -exec cat {} \;</pre>
+    </div>
+  </div>
+</body>
+</html>

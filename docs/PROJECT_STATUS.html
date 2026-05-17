@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>babytext — BabyLM 2026 项目总览</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --ok: #059669;
+      --warn: #d97706;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 48px; }
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 1.75rem; }
+    .hero p { margin: 0; opacity: 0.92; }
+    .hero a { color: #bfdbfe; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    h2 { margin: 0 0 12px; font-size: 1.2rem; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    h3 { margin: 16px 0 8px; font-size: 1rem; color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #f9fafb; }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.88em;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 6px;
+      word-break: break-all;
+    }
+    pre {
+      background: #0b1020;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+    ul { margin: 8px 0; padding-left: 1.25rem; }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    .tag-done { background: #d1fae5; color: var(--ok); }
+    .tag-wip { background: #fef3c7; color: var(--warn); }
+    .tag-todo { background: #e5e7eb; color: #374151; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .tree {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>babytext — BabyLM 2026 Strict 实验总览</h1>
+      <p>
+        GitHub: <a href="https://github.com/Rainm1st/babytext">github.com/Rainm1st/babytext</a>
+        · 更新：2026-05-16
+        · 一眼版：<a href="PROGRESS.md" style="color:#bfdbfe">docs/PROGRESS.md</a>
+      </p>
+    </header>
+
+    <section class="card">
+      <h2>仓库上传策略</h2>
+      <table>
+        <tr><th style="width:50%">✅ 会上传</th><th>❌ 不上传</th></tr>
+        <tr>
+          <td>全部实验代码、configs、shell/Python 脚本</td>
+          <td>官方 <code>*.train.txt</code> / <code>*.dev.txt</code> 语料</td>
+        </tr>
+        <tr>
+          <td><code>experiments/训练日志/*.html</code> 与 <code>docs/PROGRESS.md</code></td>
+          <td>tokenized <code>*.bin</code>、模型 checkpoint、HF 权重</td>
+        </tr>
+        <tr>
+          <td><code>previous/</code> 分析脚本与 JSON 结果</td>
+          <td><code>local_hf_cache</code>、<code>gpt-bert</code> / <code>babylm-eval</code> 克隆</td>
+        </tr>
+      </table>
+      <p class="muted">语料下载：<code>DATA.md</code>（仓库根目录）</p>
+    </section>
+
+    <section class="card">
+      <h2>一、比赛与赛道</h2>
+      <table>
+        <tr><th>项目</th><th>说明</th></tr>
+        <tr>
+          <td>赛事</td>
+          <td><a href="https://babylm.github.io/">BabyLM Challenge</a> — 在有限语料上预训练小模型，评测语言能力与样本效率</td>
+        </tr>
+        <tr>
+          <td>赛道</td>
+          <td><strong>Strict</strong>：固定约 100M 词训练预算与官方语料组合</td>
+        </tr>
+        <tr>
+          <td>官方资源</td>
+          <td>
+            语料：<code>BabyLM-2026-Strict</code> ·
+            基线：<a href="https://huggingface.co/BabyLM-community">BabyLM-community</a> ·
+            评测：<code>babylm-eval/strict</code>
+          </td>
+        </tr>
+        <tr>
+          <td>核心指标</td>
+          <td>Zero-shot 平均、Finetune 平均、综合 Text Average（以 leaderboard 为准）</td>
+        </tr>
+        <tr>
+          <td>两条技术路线</td>
+          <td>
+            <strong>GPT-2 causal</strong>：自回归 + 可选混合 mask（本仓库 <code>train_hybrid_gpt2.py</code>）<br />
+            <strong>GPT-BERT mntp</strong>：掩码为主 + 少量因果（官方 <code>ltgoslo/gpt-bert</code>，榜一 baseline 族）
+          </td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>二、仓库目录框架</h2>
+      <div class="tree">babytext/   （Git 根 = 本地 experiments/）
+├── README.md
+├── DATA.md
+├── docs/
+├── gpt2-masked-objective/
+├── gpt-bert-masked-focus/
+└── 训练日志/
+      </div>
+      <p class="muted">官方语料在仓库外（见 <code>DATA.md</code>）。.bin / checkpoint 不推送。</p>
+    </section>
+
+    <section class="card">
+      <h2>三、已完成工作</h2>
+
+      <h3>3.1 GPT-2 混合目标（experiments/gpt2-masked-objective/）</h3>
+      <p><span class="tag tag-done">已完成</span> 训练框架、配置与多轮 mask 比例消融</p>
+      <table>
+        <tr><th>Run</th><th>说明</th><th>状态</th></tr>
+        <tr>
+          <td>mask5 / mask10 / mask20 / mask50</td>
+          <td>α = 0.05 ~ 0.50，共享官方 GPT-2 100M 起点与 masking 规则</td>
+          <td>已跑通训练流程</td>
+        </tr>
+        <tr>
+          <td><strong>run3</strong>（mask10 rerun）</td>
+          <td>线上名 <code>mask10_rerun_best</code>；官方 strict finetune 已完成</td>
+          <td>可提交（backend: causal）</td>
+        </tr>
+        <tr>
+          <td><strong>run4</strong>（task-focus）</td>
+          <td>语料侧重 mnli / rte / wsc / qqp；words_seen ≈ 4.38M；10 epoch</td>
+          <td>训练完成；快速评测见下表</td>
+        </tr>
+        <tr>
+          <td><strong>run5</strong>（教师增广）</td>
+          <td><code>teacher_generate_run5.py</code>、<code>build_run5_mixed_dataset.py</code> 脚本就绪</td>
+          <td><span class="tag tag-todo">未训练</span></td>
+        </tr>
+      </table>
+
+      <h3>run3 官方 finetune（节选 accuracy）</h3>
+      <table>
+        <tr><th>任务</th><th>accuracy</th><th>备注</th></tr>
+        <tr><td>mnli</td><td>0.357</td><td></td></tr>
+        <tr><td>rte</td><td>0.540</td><td>部分任务 F1/MCC 为 0</td></tr>
+        <tr><td>wsc</td><td>0.615</td><td></td></tr>
+        <tr><td>qqp</td><td>0.628</td><td></td></tr>
+        <tr><td>mrpc</td><td>0.681</td><td>f1 ≈ 0.81</td></tr>
+        <tr><td>multirc</td><td>0.645</td><td></td></tr>
+        <tr><td>boolq</td><td>0.691</td><td></td></tr>
+      </table>
+
+      <h3>run4 本地快速评测（max_samples=500，非最终榜单口径）</h3>
+      <table>
+        <tr><th>任务</th><th>分数</th></tr>
+        <tr><td>MNLI</td><td>34.20</td></tr>
+        <tr><td>RTE</td><td>52.71</td></tr>
+        <tr><td>QQP</td><td>62.00</td></tr>
+        <tr><td>WSC</td><td>61.54</td></tr>
+      </table>
+      <p class="muted">run3 在可对齐的 4 项上略优于 run4 快速分；run4 需补官方 strict 评测后再做最终判优。</p>
+
+      <h3>3.2 GPT-BERT Masked Focus（experiments/gpt-bert-masked-focus/）</h3>
+      <p><span class="tag tag-wip">进行中</span> 基础设施与 smoke 已通过</p>
+      <ul>
+        <li><span class="tag tag-done">完成</span> HF 权重下载、<code>ltgoslo/gpt-bert</code> 环境、Strict tokenization 流水线（<code>04b_tokenize_babylm_strict.sh</code>）</li>
+        <li><span class="tag tag-done">完成</span> 修复 vocab 不匹配：<code>small.json</code> (8192) → <code>base.json</code> (16384)，消除 CUDA device-side assert</li>
+        <li><span class="tag tag-done">完成</span> <code>09_patch_train_100m_dataloader.py</code> 修复 wandb 日志 AttributeError</li>
+        <li><span class="tag tag-done">完成</span> smoke：Embedding(16384, 768)，训练约 1.4 it/s，可 forward</li>
+        <li><span class="tag tag-todo">待做</span> 全量 3.2G train.bin + <code>max_steps=2000</code> 长训</li>
+        <li><span class="tag tag-todo">待做</span> 官方 <code>mntp</code> 评测与 leaderboard 提交</li>
+      </ul>
+
+      <h3>3.3 文档与记录</h3>
+      <ul>
+        <li><code>experiments/训练日志/*.html</code> — 分实验日期的详细记录</li>
+        <li><code>docs/STRUCTURE.md</code> — 目录索引</li>
+        <li>根目录 <code>README.md</code> — 快速入口与 Git 推送说明</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>四、后续计划（优先级）</h2>
+      <table>
+        <tr><th>优先级</th><th>任务</th><th>产出</th></tr>
+        <tr>
+          <td>P0</td>
+          <td>GPT-BERT 全量继续预训练（单卡 <code>06_train_single_gpu_torchrun.sh</code>）</td>
+          <td>checkpoint under <code>/data0/.../gpt_bert_masked_focus_continue</code></td>
+        </tr>
+        <tr>
+          <td>P0</td>
+          <td>babylm-eval strict：<code>eval_zero_shot</code> + <code>eval_finetuning</code>，backend <code>mntp</code></td>
+          <td>可 collate 的 predictions</td>
+        </tr>
+        <tr>
+          <td>P1</td>
+          <td>run4 走官方 strict 评测，与 run3 同口径对比</td>
+          <td>是否保留 task-focus 数据策略</td>
+        </tr>
+        <tr>
+          <td>P1</td>
+          <td>提交当前最佳 GPT-2（run3）若尚未上传 leaderboard</td>
+          <td><code>collate_preds --backend causal</code></td>
+        </tr>
+        <tr>
+          <td>P2</td>
+          <td>run5 教师增广 + 混合语料（GPT-2 线）</td>
+          <td>见 <code>run5_teacher_data_plan.html</code></td>
+        </tr>
+        <tr>
+          <td>P2</td>
+          <td>从 HF 权重加载到官方 <code>train_100m</code> state_dict（若需真·继续训而非重初始化）</td>
+          <td>需核对 gpt-bert checkpoint 格式</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>五、关键命令备忘</h2>
+      <h3>GPT-2 提交</h3>
+      <pre>cd ~/babytext/experiments/babylm-eval/strict
+python -m evaluation_pipeline.collate_preds \
+  --model_path_or_name mask10_rerun_best \
+  --backend causal \
+  --track strict</pre>
+
+      <h3>GPT-BERT 训练（单卡 smoke / 长训）</h3>
+      <pre>export WANDB_DISABLED=true
+export GPT_BERT_TRAIN_PATH=/data0/language/.../train_strict_strict_tokenized.bin
+export GPT_BERT_VALID_PATH=/data0/language/.../valid_strict_strict_tokenized.bin
+cd ~/babytext/experiments/gpt-bert-masked-focus/scripts
+python 09_patch_train_100m_dataloader.py
+bash 06_train_single_gpu_torchrun.sh</pre>
+
+      <h3>词表检查</h3>
+      <pre>python 08_check_token_ids.py \
+  --train_bin="$GPT_BERT_TRAIN_PATH" \
+  --tokenizer=/data0/.../tokenizer/tokenizer.json \
+  --config=/home/language/babytext/experiments/gpt-bert/configs/base.json</pre>
+    </section>
+
+    <section class="card">
+      <h2>六、上传到 GitHub</h2>
+      <p>仓库：<a href="https://github.com/Rainm1st/babytext">https://github.com/Rainm1st/babytext</a></p>
+      <pre>cd experiments    # 本地路径；该目录即 Git 根
+git init
+git add .
+git commit -m "BabyLM Strict: code and progress docs"
+git branch -M main
+git remote add origin https://github.com/Rainm1st/babytext.git
+git push -u origin main</pre>
+      <p class="muted">在 <code>experiments/</code> 内执行；勿包含 <code>*.train.txt</code>、<code>*.bin</code>。</p>
+    </section>
+
+    <section class="card">
+      <h2>七、训练日志 HTML 索引</h2>
+      <table>
+        <tr><th>文件</th><th>主题</th></tr>
+        <tr><td><code>训练日志/5.10mask5.html</code></td><td>mask5 实验</td></tr>
+        <tr><td><code>训练日志/5.11mask10-mask20.html</code></td><td>mask10 vs mask20</td></tr>
+        <tr><td><code>训练日志/mask10_run3_run4_latest_summary.html</code></td><td>run3/run4 汇总</td></tr>
+        <tr><td><code>训练日志/对话整理_GPT2与GPT-BERT与训练路线.html</code></td><td>技术路线决策</td></tr>
+        <tr><td><code>训练日志/run5_teacher_data_plan.html</code></td><td>教师增广计划</td></tr>
+        <tr><td><code>训练日志/mask10_run4_quick_eval.html</code></td><td>run4 快速评测</td></tr>
+      </table>
+    </section>
+
+    <footer>
+      babytext · BabyLM 2026 Strict · 实验记录仅供个人参赛使用
+    </footer>
+  </div>
+</body>
+</html>
