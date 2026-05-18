@@ -15,7 +15,21 @@ TRAIN_PATH="${GPT_BERT_TRAIN_PATH:-}"
 VALID_PATH="${GPT_BERT_VALID_PATH:-}"
 
 # 训练步数：从零建议提高（严格赛道下 tokenizer 子词量远大于 2000 step）
-MAX_STEPS="${GPT_BERT_MAX_STEPS:-20000}"
+SEQ_LENGTH="${GPT_BERT_SEQ_LENGTH:-128}"
+LOCAL_BATCH="${GPT_BERT_LOCAL_BATCH:-16}"
+GLOBAL_BATCH="${GPT_BERT_GLOBAL_BATCH:-4096}"
+STRICT_TRAIN_WORDS="${GPT_BERT_STRICT_TRAIN_WORDS:-96376391}"
+STRICT_EPOCHS="${GPT_BERT_STRICT_EPOCHS:-10}"
+SUBWORDS_PER_WORD_X1000="${GPT_BERT_SUBWORDS_PER_WORD_X1000:-1592}"
+TOKENS_PER_STEP=$((GLOBAL_BATCH * SEQ_LENGTH))
+BUDGET_SUBWORDS=$(((STRICT_TRAIN_WORDS * STRICT_EPOCHS * SUBWORDS_PER_WORD_X1000 + 999) / 1000))
+if [ -n "${GPT_BERT_MAX_STEPS:-}" ]; then
+  MAX_STEPS="$GPT_BERT_MAX_STEPS"
+  BUDGET_MODE="manual"
+else
+  MAX_STEPS=$(((BUDGET_SUBWORDS + TOKENS_PER_STEP - 1) / TOKENS_PER_STEP))
+  BUDGET_MODE="strict_words_x_epochs"
+fi
 
 if [ -z "$TRAIN_PATH" ] || [ -z "$VALID_PATH" ]; then
   echo "[ERROR] export GPT_BERT_TRAIN_PATH and GPT_BERT_VALID_PATH first."
@@ -60,6 +74,10 @@ if [ -n "${GPT_BERT_RESUME_STATE:-}" ]; then
 fi
 
 echo "[INFO] Starting torchrun (MAX_STEPS=$MAX_STEPS, LOG=$LOG_FILE)"
+echo "[INFO] Budget mode: $BUDGET_MODE"
+echo "[INFO] Budget words: $STRICT_TRAIN_WORDS x $STRICT_EPOCHS epochs = $((STRICT_TRAIN_WORDS * STRICT_EPOCHS)) words seen"
+echo "[INFO] Approx subword budget: $BUDGET_SUBWORDS (subwords_per_word_x1000=$SUBWORDS_PER_WORD_X1000)"
+echo "[INFO] Tokens/step: $GLOBAL_BATCH x $SEQ_LENGTH = $TOKENS_PER_STEP"
 
 nohup torchrun --standalone --nnodes=1 --nproc_per_node=1 train_100m.py \
   --train_path="$TRAIN_PATH" \
@@ -70,9 +88,9 @@ nohup torchrun --standalone --nnodes=1 --nproc_per_node=1 train_100m.py \
   --name="gpt_bert_strict_scratch" \
   --hybrid_numerator=1 \
   --hybrid_denominator=1 \
-  --seq_length=128 \
-  --local_batch_size="${GPT_BERT_LOCAL_BATCH:-16}" \
-  --global_batch_size="${GPT_BERT_GLOBAL_BATCH:-4096}" \
+  --seq_length="$SEQ_LENGTH" \
+  --local_batch_size="$LOCAL_BATCH" \
+  --global_batch_size="$GLOBAL_BATCH" \
   --learning_rate="${GPT_BERT_LR:-0.007}" \
   --max_steps="$MAX_STEPS" \
   --optimizer=lamb \

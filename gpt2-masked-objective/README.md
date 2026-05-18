@@ -52,6 +52,19 @@ Keep all settings identical except masked ratio:
 - `results/`: evaluation outputs and comparison tables
 - `prepare_experiment.py`: preflight checker and model-weight downloader
 
+Training outputs and checkpoints are intentionally written outside the Git
+workspace by default:
+
+```text
+/data0/language/babylm_runs/gpt2_masked_objective/
+```
+
+The default can be overridden with:
+
+```bash
+export GPT2_MASKED_RUN_BASE=/data0/language/babylm_runs/gpt2_masked_objective
+```
+
 ## Preflight Before Training
 
 Run this before any training:
@@ -76,13 +89,16 @@ Mask-only training (official baseline used as reference, not retrained):
 
 Or run the Python command directly:
 
-`D:/conda_envs/chatgpt/python.exe experiments/gpt2-masked-objective/train_hybrid_gpt2.py --config experiments/gpt2-masked-objective/configs/run_mask10.json --output-dir experiments/gpt2-masked-objective/outputs/gpt2_mask10_run1`
+`D:/conda_envs/chatgpt/python.exe experiments/gpt2-masked-objective/train_hybrid_gpt2.py --config experiments/gpt2-masked-objective/configs/run_mask10.json --output-dir /data0/language/babylm_runs/gpt2_masked_objective/gpt2_mask10_run1`
 
 ## One-Command Full Pipeline
 
 This runs mask5 + mask10 sequentially, then evaluates both runs and updates result tables:
 
 `powershell -ExecutionPolicy Bypass -File experiments/gpt2-masked-objective/run_both_mask.ps1`
+
+`run_both_mask` reads run summaries from `GPT2_MASKED_RUN_BASE`, matching the
+training launcher output location.
 
 Debug mode (faster eval with sample cap):
 

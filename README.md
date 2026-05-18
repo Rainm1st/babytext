@@ -197,6 +197,32 @@ D:\code\Repository_GitHub\babytext
 /data0/language/babylm_runs/
 ```
 
+训练输出默认写入 `/data0/language/babylm_runs/`，避免 checkpoint 和模型权重占满
+`/home/language/babytext/experiments/`：
+
+```text
+GPT-2 strict scratch:
+  /data0/language/babylm_runs/gpt2_strict_scratch/
+
+GPT-2 masked objective:
+  /data0/language/babylm_runs/gpt2_masked_objective/
+
+GPT-BERT scratch / continued:
+  /data0/language/babylm_runs/gpt_bert_scratch_strict/
+  /data0/language/babylm_runs/gpt_bert_masked_focus_continue/
+
+GPT-BERT tokenized data:
+  /data0/language/babylm_runs/gpt_bert_strict_tokenized/
+```
+
+相关覆盖变量：
+
+```bash
+export GPT2_STRICT_RUN_BASE=/data0/language/babylm_runs/gpt2_strict_scratch
+export GPT2_MASKED_RUN_BASE=/data0/language/babylm_runs/gpt2_masked_objective
+export RUN_DIR=/data0/language/babylm_runs/gpt_bert_scratch_strict
+```
+
 本地主要用于编辑脚本和整理文档；实际长训练应在服务器 CUDA/PyTorch 环境中运行。长跑前先确认服务器 Python、CUDA、PyTorch 和磁盘输出路径。
 
 ---

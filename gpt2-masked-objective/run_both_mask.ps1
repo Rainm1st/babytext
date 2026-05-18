@@ -11,7 +11,10 @@ $expDir = Join-Path $ProjectRoot "gpt2-masked-objective"
 $runTrain = Join-Path $expDir "run_train.ps1"
 $preflight = Join-Path $expDir "prepare_experiment.py"
 $evalScript = Join-Path $expDir "evaluate_and_fill_tables.py"
-$outDir = Join-Path $expDir "outputs"
+if (-not $env:GPT2_MASKED_RUN_BASE) {
+  $env:GPT2_MASKED_RUN_BASE = "/data0/language/babylm_runs/gpt2_masked_objective"
+}
+$outDir = $env:GPT2_MASKED_RUN_BASE
 $resultDir = Join-Path $expDir "results"
 
 $env:TRANSFORMERS_NO_TORCHVISION = "1"

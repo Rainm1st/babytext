@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -38,7 +39,7 @@ def main() -> None:
     preflight = exp / "prepare_experiment.py"
     run_train = exp / "run_train.py"
     eval_script = exp / "evaluate_and_fill_tables.py"
-    out_dir = exp / "outputs"
+    out_dir = Path(os.environ.get("GPT2_MASKED_RUN_BASE", "/data0/language/babylm_runs/gpt2_masked_objective"))
     result_dir = exp / "results"
 
     run_cmd([py, preflight, "--no-baseline-compare"], root)

@@ -28,23 +28,31 @@
 # 编辑 configs/strict_gpt2_default.json ：training_data_path、cuda_visible_devices、batch、use_wandb 等
 
 chmod +x run_train.sh
-./run_train.sh configs/strict_gpt2_default.json ./outputs/my_run
+./run_train.sh configs/strict_gpt2_default.json
 
-# 断点续训（需已有 ./outputs/my_run/training_state.pt）
-./run_train.sh configs/strict_gpt2_default.json ./outputs/my_run --resume
+# 默认输出到 /data0/language/babylm_runs/gpt2_strict_scratch/run_时间戳
+# 可用第二个参数指定输出目录，断点续训需使用同一个输出目录
+./run_train.sh configs/strict_gpt2_default.json /data0/language/babylm_runs/gpt2_strict_scratch/my_run --resume
 ```
 
 或直接：
 
 ```bash
-python train_strict_lm.py --config configs/strict_gpt2_default.json --output-dir ./outputs/my_run \
+python train_strict_lm.py --config configs/strict_gpt2_default.json --output-dir /data0/language/babylm_runs/gpt2_strict_scratch/my_run \
   --num-workers 4 --logging-steps 50
 
-python train_strict_lm.py --config configs/strict_gpt2_default.json --output-dir ./outputs/my_run \
-  --resume-from ./outputs/my_run --num-workers 4 --logging-steps 50
+python train_strict_lm.py --config configs/strict_gpt2_default.json --output-dir /data0/language/babylm_runs/gpt2_strict_scratch/my_run \
+  --resume-from /data0/language/babylm_runs/gpt2_strict_scratch/my_run --num-workers 4 --logging-steps 50
 ```
 
-产出：`outputs/.../final/`（上传 HF）、`checkpoints/`（按 epoch / step）、`training_state.pt`（优化器+步数，用于 `--resume-from`）。
+默认产出位于 `/data0/language/babylm_runs/gpt2_strict_scratch/.../`：
+`final/`（上传 HF）、`checkpoints/`（按 epoch / step）、`training_state.pt`（优化器+步数，用于 `--resume-from`）。
+
+可用环境变量覆盖默认根目录：
+
+```bash
+export GPT2_STRICT_RUN_BASE=/data0/language/babylm_runs/gpt2_strict_scratch
+```
 
 ### 进度与日志
 

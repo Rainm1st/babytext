@@ -2,7 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${1:-$ROOT/configs/strict_gpt2_default.json}"
-OUT="${2:-$ROOT/outputs/run_$(date +%Y%m%d_%H%M%S)}"
+RUN_BASE="${GPT2_STRICT_RUN_BASE:-/data0/language/babylm_runs/gpt2_strict_scratch}"
+OUT="${2:-$RUN_BASE/run_$(date +%Y%m%d_%H%M%S)}"
 mkdir -p "$OUT"
 EXTRA=()
 if [ "${3:-}" = "--resume" ]; then

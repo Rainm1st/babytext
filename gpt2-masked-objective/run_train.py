@@ -1,4 +1,5 @@
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,8 @@ def main() -> None:
     }
     cfg_name, out_name = run_map[args.model]
     cfg = exp / "configs" / cfg_name
-    out = exp / "outputs" / out_name
+    out_base = Path(os.environ.get("GPT2_MASKED_RUN_BASE", "/data0/language/babylm_runs/gpt2_masked_objective"))
+    out = out_base / out_name
 
     cmd = [
         sys.executable,

@@ -27,9 +27,28 @@ bash 06_train_single_gpu_torchrun.sh
 
 每次 `save_every` 会写入 `*_state_dict.bin`，与权重 `*.bin` 同名前缀。
 
-### 推荐步数（Strict 从零）
+默认输出目录均在 `/data0/language/babylm_runs` 下：
 
-环境变量 **`GPT_BERT_MAX_STEPS`** 默认 **20000**（脚本 `05`/`06`）；算力不足可先 5k–10k smoke，再长跑。**最佳评测分数**需在 dev/BLiMP 或官方 eval 上选型 checkpoint，而非单凭 train loss。
+```text
+scratch run: /data0/language/babylm_runs/gpt_bert_scratch_strict
+continued run: /data0/language/babylm_runs/gpt_bert_masked_focus_continue
+tokenized data: /data0/language/babylm_runs/gpt_bert_strict_tokenized
+```
+
+可用 `RUN_DIR` 覆盖训练输出目录；断点续训时 `GPT_BERT_RESUME_STATE`
+应指向同一 `RUN_DIR` 下最新的 `*_state_dict.bin`。
+
+### 训练预算（Strict 从零）
+
+`06_train_single_gpu_torchrun.sh` 默认按 **Strict 训练语料词数 × 10 epochs** 换算 `max_steps`，而不是固定 20000 steps。默认估算：
+
+- `GPT_BERT_STRICT_TRAIN_WORDS=96376391`
+- `GPT_BERT_STRICT_EPOCHS=10`
+- `GPT_BERT_SUBWORDS_PER_WORD_X1000=1592`
+- `GPT_BERT_SEQ_LENGTH=128`
+- `GPT_BERT_GLOBAL_BATCH=4096`
+
+若显式设置 `GPT_BERT_MAX_STEPS`，则使用手动 step 数覆盖预算换算。算力不足可先用 small bin / 小 step smoke；**最佳评测分数**需在 dev/BLiMP 或官方 eval 上选型 checkpoint，而非单凭 train loss。
 
 ## 服务器执行顺序
 
@@ -40,6 +59,8 @@ bash 02_setup_gpt_bert_repo.sh
 bash 04b_tokenize_babylm_strict.sh   # 生成 .bin
 export GPT_BERT_TRAIN_PATH=.../train_strict_strict_tokenized.bin
 export GPT_BERT_VALID_PATH=.../valid_strict_strict_tokenized.bin
+export RUN_DIR=/data0/language/babylm_runs/gpt_bert_scratch_strict
+unset GPT_BERT_MAX_STEPS  # use Strict words x 10 epochs budget conversion
 bash 06_train_single_gpu_torchrun.sh
 ```
 
