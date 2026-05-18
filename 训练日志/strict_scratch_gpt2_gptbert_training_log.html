@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strict 从零训练记录：GPT-2（causal）与 GPT-BERT（mntp）</title>
+  <style>
+    :root { --bg:#f3f4f6; --card:#fff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --accent:#1d4ed8; }
+    body { margin:0; font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); line-height:1.65; }
+    .wrap { max-width:980px; margin:0 auto; padding:24px 18px 48px; }
+    h1 { font-size:1.45rem; margin:0 0 12px; }
+    h2 { font-size:1.1rem; margin:28px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--border); }
+    h3 { font-size:0.95rem; color:var(--accent); margin:18px 0 8px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+    .muted { color:var(--muted); font-size:0.9rem; }
+    table { width:100%; border-collapse:collapse; font-size:0.88rem; margin:10px 0; }
+    th, td { border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top; }
+    th { background:#f9fafb; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:0.85em; background:#f3f4f6; padding:1px 6px; border-radius:4px; word-break:break-all; }
+    pre { background:#0b1020; color:#e5e7eb; border-radius:8px; padding:14px; overflow-x:auto; font-size:0.82rem; white-space:pre-wrap; }
+    .todo { background:#fef3c7; border-left:4px solid #d97706; padding:10px 14px; margin:12px 0; border-radius:6px; }
+    .ok { background:#d1fae5; border-left:4px solid #059669; padding:10px 14px; margin:12px 0; border-radius:6px; }
+    ul { margin:8px 0; padding-left:1.2rem; }
+    footer { margin-top:28px; font-size:0.85rem; color:var(--muted); text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Strict 赛道 · 从零预训练实验日志</h1>
+      <p class="muted">双路线：<strong>GPT-2 因果 LM（causal）</strong> 与 <strong>GPT-BERT 掩码主线（mntp）</strong>。本文档随训练更新结果。</p>
+      <p class="muted"><strong>文档版本</strong>：2026-05-18（初稿）　<strong>仓库</strong>：<a href="https://github.com/Rainm1st/babytext">github.com/Rainm1st/babytext</a></p>
+    </div>
+
+    <div class="card">
+      <h2>一、问题与目标</h2>
+      <ul>
+        <li>在 BabyLM 2026 <strong>Strict</strong> 预算下，仅使用官方语料，分别从<strong>随机初始化</strong>训练两套模型。</li>
+        <li>GPT-2 线：提交评测 backend 为 <code>causal</code>。</li>
+        <li>GPT-BERT 线：提交评测 backend 为 <code>mntp</code>。</li>
+        <li>训练完成后在此表同步：<strong>验证损失 / 官方 zero-shot+finetune / leaderboard</strong>（按实际可得的指标填写）。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>二、GPT-2 strict scratch（<code>babylm-strict-scratch/</code>）</h2>
+
+      <h3>2.1 模型与数据</h3>
+      <table>
+        <tr><th>项</th><th>说明</th></tr>
+        <tr><td>架构</td><td>HuggingFace <code>AutoConfig.from_pretrained("gpt2")</code> + <code>AutoModelForCausalLM.from_config</code>，<strong>随机初始化</strong>（不加载 OpenAI / BabyLM 预训练权重）</td></tr>
+        <tr><td>Tokenizer</td><td><code>gpt2</code>（仅词表）；若缺 pad 则添加 <code>&lt;|pad|&gt;</code> 并 <code>resize_token_embeddings</code></td></tr>
+        <tr><td>数据</td><td>目录内全部 <code>*.train.txt</code>；按块拼接为长度 <code>max_sequence_length</code>（默认 512）的 CLM 样本</td></tr>
+        <tr><td>混合比例</td><td>可选 <code>source_proportional_batches</code> + <code>source_word_counts</code>，使 batch 内各文件比例贴近子语料词数占比</td></tr>
+      </table>
+
+      <h3>2.2 训练策略</h3>
+      <table>
+        <tr><th>项</th><th>默认 / 配置</th></tr>
+        <tr><td>损失</td><td>标准因果语言建模（next-token / 块内对齐的 labels）</td></tr>
+        <tr><td>优化器</td><td>AdamW；weight decay 分组（无 decay：bias/LayerNorm 等）</td></tr>
+        <tr><td>学习率调度</td><td>Cosine；<code>warmup_ratio</code> 默认 0.06</td></tr>
+        <tr><td>精度</td><td>配置 <code>mixed_precision: bf16</code>（无 GradScaler）；fp16 时启用 Scaler</td></tr>
+        <tr><td>Epoch 上限</td><td>代码强制 <strong>≤ 10</strong>（赛事）</td></tr>
+        <tr><td>有效 batch</td><td><code>batch_size_per_device</code> × GPU 数 × <code>gradient_accumulation_steps</code></td></tr>
+      </table>
+
+      <h3>2.3 日志、断点、W&B</h3>
+      <ul>
+        <li><strong>进度条</strong>：每 epoch <code>tqdm</code>；数据集 <code>map</code> 阶段带描述。</li>
+        <li><strong>断点</strong>：<code>training_state.pt</code>（优化器、调度器、scaler、global_step、RNG、epoch 内 batch 进度）；<code>checkpoints/epoch_*</code>、<code>step_*</code>、<code>best</code>。</li>
+        <li><strong>续训</strong>：<code>./run_train.sh config.json ./outputs/RUN --resume</code> 或 <code>--resume-from ./outputs/RUN</code>（须与 <code>--output-dir</code> 同一路径）。</li>
+        <li><strong>W&B</strong>：配置文件 <code>use_wandb</code>（默认 false）；需 <code>pip install wandb</code>。</li>
+      </ul>
+
+      <h3>2.4 运行参数备忘（服务器）</h3>
+      <pre>cd ~/babytext/experiments/babylm-strict-scratch
+# 先编辑 configs/strict_gpt2_default.json → training_data_path
+chmod +x run_train.sh
+./run_train.sh configs/strict_gpt2_default.json ./outputs/gpt2_strict_scratch_v1</pre>
+
+      <div class="todo" id="results-gpt2">
+        <strong>【训练完成后填写 · GPT-2】</strong>
+        <table>
+          <tr><th>字段</th><th>值</th></tr>
+          <tr><td>输出目录</td><td><em>例：/path/to/outputs/gpt2_strict_scratch_v1</em></td></tr>
+          <tr><td>最终 / 选用 checkpoint</td><td><em>final/ 或 checkpoints/best</em></td></tr>
+          <tr><td>训练结束时间（UTC+8）</td><td><em>——</em></td></tr>
+        <tr><td>Epoch 末平均 loss（摘自日志）</td><td><em>——</em></td></tr>
+          <tr><td>HF 模型页（若已上传）</td><td><em>——</em></td></tr>
+          <tr><td>官方 strict 评测概要</td><td><em>粘贴或链接 babylm-eval 结果</em></td></tr>
+          <tr><td>Leaderboard</td><td><em>——</em></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>三、GPT-BERT strict scratch（<code>gpt-bert-masked-focus/scripts/</code> + <code>ltgoslo/gpt-bert</code>）</h2>
+
+      <h3>3.1 模型与数据</h3>
+      <table>
+        <tr><th>项</th><th>说明</th></tr>
+        <tr><td>代码</td><td>官方 <code>pretraining/train_100m.py</code>（需 <code>torchrun</code>）</td></tr>
+        <tr><td>配置</td><td><strong><code>configs/base.json</code></strong>（<code>vocab_size=16384</code>，768×12）；<strong>禁止</strong>与 16k tokenizer 混用 <code>small.json</code></td></tr>
+        <tr><td>初始化</td><td>不传 <code>--checkpoint_filename</code> 时为 <strong>随机初始化</strong> <code>Bert(args)</code></td></tr>
+        <tr><td>Tokenizer</td><td><code>Tokenizer.from_file(tokenizer.json)</code>，通常由 HF <code>babylm-baseline-100m-gpt-bert-masked-focus</code> 导出</td></tr>
+        <tr><td>数据</td><td>预 tokenize 的 <code>.bin</code>（<code>04b_tokenize_babylm_strict.sh</code> 由 Strict 文本生成）</td></tr>
+      </table>
+
+      <h3>3.2 训练策略</h3>
+      <table>
+        <tr><th>项</th><th>说明</th></tr>
+        <tr><td>主目标</td><td>掩码跨度 + 随机替换（<code>mask_p_start/end</code>、<code>mask_random_p</code>、<code>mask_keep_p</code>）+ 辅助 z-loss</td></tr>
+        <tr><td>单卡 hybrid</td><td><code>hybrid_numerator=1</code>、<code>hybrid_denominator=1</code> → <strong>全程 masked 分支</strong>（多卡 16 张时可接近官方 15/16 + 1/16）</td></tr>
+        <tr><td>优化器</td><td>LAMB；默认 <code>lr=0.007</code>；warmup/cooldown 比例各约 1.6%</td></tr>
+        <tr><td>步数</td><td>环境变量 <code>GPT_BERT_MAX_STEPS</code>（脚本默认 20000）；需结合显存调整 <code>GPT_BERT_LOCAL_BATCH</code> 等</td></tr>
+        <tr><td>序列长度</td><td>脚本默认 <code>seq_length=128</code>；训练后段官方脚本可能按进度放大（见 src）</td></tr>
+      </table>
+
+      <h3>3.3 日志、断点、W&B</h3>
+      <ul>
+        <li><strong>进度条</strong>：<code>train_100m.py</code> 内 <code>tqdm</code>（Train / Valid）。</li>
+        <li><strong>断点</strong>：每 <code>save_every</code> 生成 <code>{name}.bin</code> 与 <code>{name}_state_dict.bin</code>；<strong>续训用 <code>*_state_dict.bin</code></strong>（含优化器与步数）。</li>
+        <li><strong>续训</strong>：<code>export GPT_BERT_RESUME_STATE=/path/to/*_state_dict.bin</code> 后执行 <code>06_train_single_gpu_torchrun.sh</code>。</li>
+        <li><strong>W&B</strong>：默认 <code>WANDB_DISABLED=true</code>；补丁 <code>09_patch_*</code>（dataloader）、<code>10_patch_*</code>（wandb stub）。</li>
+      </ul>
+
+      <h3>3.4 运行参数备忘（服务器）</h3>
+      <pre>cd ~/babytext/experiments/gpt-bert-masked-focus/scripts
+export GPT_BERT_TRAIN_PATH=.../train_strict_strict_tokenized.bin
+export GPT_BERT_VALID_PATH=.../valid_strict_strict_tokenized.bin
+export RUN_DIR=/data0/language/babylm_runs/gpt_bert_scratch_strict
+export WANDB_DISABLED=true
+export GPT_BERT_MAX_STEPS=20000
+bash 06_train_single_gpu_torchrun.sh
+tail -f $RUN_DIR/logs/*.log</pre>
+
+      <div class="todo" id="results-gptbert">
+        <strong>【训练完成后填写 · GPT-BERT】</strong>
+        <table>
+          <tr><th>字段</th><th>值</th></tr>
+          <tr><td>RUN_DIR</td><td><em>——</em></td></tr>
+          <tr><td>选用权重</td><td><em>.bin 或转换为 HF 后的目录</em></td></tr>
+          <tr><td>训练结束时间（UTC+8）</td><td><em>——</em></td></tr>
+          <tr><td>验证 loss / acc（摘自日志）</td><td><em>——</em></td></tr>
+          <tr><td>HF 模型页（若已上传）</td><td><em>——</em></td></tr>
+          <tr><td>官方 strict 评测（backend mntp）</td><td><em>——</em></td></tr>
+          <tr><td>Leaderboard</td><td><em>——</em></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>四、本地 Windows 上传（PowerShell 注意）</h2>
+      <p><strong>勿用变量名 <code>$Host</code></strong>：在 PowerShell 中 <code>$Host</code> 是内置只读对象，用作 SSH 目标会变成无效主机名。</p>
+      <p>请改用例如 <code>$SshHost</code>：</p>
+      <pre>$Port = 25123
+$SshHost = "language@8.153.12.93"
+$Src = "D:\AAAprojects\babylava\BabyLM-community\experiments"
+
+scp -P $Port -r "$Src\babylm-strict-scratch" "${SshHost}:~/babytext/experiments/"
+scp -P $Port -r "$Src\gpt-bert-masked-focus"   "${SshHost}:~/babytext/experiments/"</pre>
+      <p class="muted">SSH 登录：<code>ssh -p 25123 language@8.153.12.93</code></p>
+    </div>
+
+    <div class="card">
+      <h2>五、环境与常见问题</h2>
+      <ul>
+        <li>GPT-BERT：<strong>词表 16k 必须与 <code>base.json</code> 一致</strong>，否则 CUDA device-side assert。</li>
+        <li>GPT-BERT 导出给 HF / babylm-eval：除 <code>.bin</code> 外通常还需 <code>config.json</code> 与 tokenizer 文件，按评测仓库要求补齐。</li>
+        <li>两台实验<strong>独立</strong>：勿将 GPT-BERT checkpoint 载入 GPT-2 脚本或相反。</li>
+      </ul>
+    </div>
+
+    <div class="ok">
+      <strong>结果同步说明</strong>：训练结束后用浏览器打开本 HTML，编辑「训练完成后填写」两节的表格（或直接改仓库中此文件后 <code>git push</code>），即可与代码版本一同留档。
+    </div>
+
+    <footer>BabyLM Strict · GPT-2 & GPT-BERT scratch · 内部实验记录</footer>
+  </div>
+</body>
+</html>
