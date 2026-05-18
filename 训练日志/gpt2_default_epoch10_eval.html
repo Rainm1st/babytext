@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPT2 default epoch10 evaluation</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: #111b34;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px;
+    }
+    p, li {
+      color: #cbd5e1;
+      line-height: 1.65;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #334155;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #1e293b;
+    }
+    code {
+      background: #0b1222;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 1px 6px;
+      color: #bfdbfe;
+      word-break: break-all;
+    }
+    .score {
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+    }
+    .ok { color: #4ade80; }
+    .warn { color: #fbbf24; }
+    .bad { color: #fb7185; }
+    .muted { color: #94a3b8; }
+    .mono {
+      font-family: ui-monospace, Consolas, monospace;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>GPT2 default epoch10 评测结果</h1>
+      <p>
+        模型：<code>/data0/language/babylm_runs/gpt2_strict_scratch/gpt2_strict_scratch_v1_epoch10_from_epoch09/final</code>
+      </p>
+      <p class="muted">整理时间：2026-05-19。结果来自服务器 BabyLM strict evaluation pipeline。</p>
+    </div>
+
+    <div class="card">
+      <h2>关键路径</h2>
+      <table>
+        <thead>
+          <tr><th>类别</th><th>路径</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>zero-shot log</td>
+            <td><code>/home/language/babytext/experiments/babylm-eval/strict/logs/gpt2_strict_scratch_epoch10_zeroshot.log</code></td>
+          </tr>
+          <tr>
+            <td>finetune log</td>
+            <td><code>/home/language/babytext/experiments/babylm-eval/strict/logs/gpt2_strict_scratch_epoch10_finetune.log</code></td>
+          </tr>
+          <tr>
+            <td>eval results</td>
+            <td><code>/home/language/babytext/experiments/babylm-eval/strict/results/final</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Zero-shot / Reading</h2>
+      <table>
+        <thead>
+          <tr><th>模块</th><th>分数</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Text Average</td>
+            <td class="score">综合文本类任务平均</td>
+            <td>按 leaderboard / 官方汇总口径记录；这里先列出各子项。</td>
+          </tr>
+          <tr>
+            <td>BLiMP</td>
+            <td class="score">75.58</td>
+            <td>语法、句法、agreement、binding、islands 等。</td>
+          </tr>
+          <tr>
+            <td>BLiMP Supplement</td>
+            <td class="score">60.45</td>
+            <td>QA congruence、turn-taking、hypernym、subject-aux inversion 等。</td>
+          </tr>
+          <tr>
+            <td>EWoK</td>
+            <td class="score">52.66</td>
+            <td>世界知识、关系、事件、物理/社会属性。</td>
+          </tr>
+          <tr>
+            <td>Entity Tracking / COMPS-style structured tracking</td>
+            <td class="score">30.44</td>
+            <td>当前结果目录中该项对应 <code>regular_*</code>、<code>move_contents_*</code>、<code>ambiref_*</code>。</td>
+          </tr>
+          <tr>
+            <td>Reading / Self-paced Reading Time</td>
+            <td class="score">0.00</td>
+            <td>自定步速阅读时间指标。</td>
+          </tr>
+          <tr>
+            <td>Eye Tracking</td>
+            <td class="score">0.74</td>
+            <td>眼动指标。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="warn">
+        注意：本次结果目录存在任务名错位。<code>entity_tracking/entity_tracking</code> 里是 COMPS-style 结构化追踪报告，平均 30.44；
+        <code>comps/comps</code> 里实际是 WUGs 报告，平均 57.12。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Finetune</h2>
+      <table>
+        <thead>
+          <tr><th>模块</th><th>Accuracy</th><th>F1</th><th>MCC</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fine-tune Average</strong></td>
+            <td class="score">60.54</td>
+            <td colspan="2">7 个 finetune 任务 accuracy 的简单平均。</td>
+          </tr>
+          <tr>
+            <td>BoolQ</td>
+            <td class="score">69.24</td>
+            <td>77.57</td>
+            <td>29.94</td>
+          </tr>
+          <tr>
+            <td>MNLI</td>
+            <td class="score">35.25</td>
+            <td class="muted">-</td>
+            <td class="muted">-</td>
+          </tr>
+          <tr>
+            <td>MRPC</td>
+            <td class="score">72.06</td>
+            <td>82.46</td>
+            <td>26.95</td>
+          </tr>
+          <tr>
+            <td>MultiRC</td>
+            <td class="score">67.08</td>
+            <td>48.38</td>
+            <td>31.49</td>
+          </tr>
+          <tr>
+            <td>QQP</td>
+            <td class="score">62.53</td>
+            <td class="bad">1.35</td>
+            <td class="bad">-0.63</td>
+          </tr>
+          <tr>
+            <td>RTE</td>
+            <td class="score">56.12</td>
+            <td>34.41</td>
+            <td>9.40</td>
+          </tr>
+          <tr>
+            <td>WSC</td>
+            <td class="score">61.54</td>
+            <td class="bad">0.00</td>
+            <td>0.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>可直接引用的文本版</h2>
+      <p class="mono">BLiMP: 75.58
+BLiMP Supplement: 60.45
+EWoK: 52.66
+Entity Tracking / COMPS-style structured tracking: 30.44
+Reading / Self-paced Reading Time: 0.00
+Eye Tracking: 0.74
+Fine-tune Average: 60.54
+
+BoolQ: accuracy 69.24, f1 77.57, mcc 29.94
+MNLI: accuracy 35.25
+MRPC: accuracy 72.06, f1 82.46, mcc 26.95
+MultiRC: accuracy 67.08, f1 48.38, mcc 31.49
+QQP: accuracy 62.53, f1 1.35, mcc -0.63
+RTE: accuracy 56.12, f1 34.41, mcc 9.40
+WSC: accuracy 61.54, f1 0.00, mcc 0.00</p>
+    </div>
+  </div>
+</body>
+</html>
