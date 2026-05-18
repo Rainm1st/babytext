@@ -43,6 +43,19 @@ fi
 mkdir -p "$RUN_DIR/logs"
 LOG_FILE="$RUN_DIR/logs/train_$(date +%Y%m%d_%H%M%S).log"
 
+MAX_STEPS="${GPT_BERT_MAX_STEPS:-20000}"
+export WANDB_DISABLED="${WANDB_DISABLED:-true}"
+export WANDB_MODE="${WANDB_MODE:-offline}"
+
+EXTRA_ARGS=()
+if [ -n "${GPT_BERT_RESUME_STATE:-}" ]; then
+  if [ ! -f "$GPT_BERT_RESUME_STATE" ]; then
+    echo "[ERROR] GPT_BERT_RESUME_STATE not a file: $GPT_BERT_RESUME_STATE"
+    exit 1
+  fi
+  EXTRA_ARGS+=(--checkpoint_filename="$GPT_BERT_RESUME_STATE")
+fi
+
 # 官方 model_logging.py 在非 SLURM 机器上会读 SLURM_PROCID，必须先补齐
 # shellcheck source=/dev/null
 source "$LAUNCH_DIR/00_slurm_single_node_env.sh"
@@ -54,6 +67,7 @@ cd "$GPT_BERT_ROOT/pretraining"
 
 # 官方 train_100m 在 iter(dataloader) 后 wandb 访问 .dataset 会崩（PyTorch 新版本）
 python "$LAUNCH_DIR/09_patch_train_100m_dataloader.py" --train_script="$GPT_BERT_ROOT/pretraining/train_100m.py"
+python "$LAUNCH_DIR/10_patch_train_100m_wandb_stub.py" --train_script="$GPT_BERT_ROOT/pretraining/train_100m.py" || true
 
 # Masked Focus: hybrid 1/16 causal ≈ numerator 1, denominator 16
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
@@ -69,10 +83,10 @@ nohup torchrun --standalone --nnodes=1 --nproc_per_node=1 train_100m.py \
   --hybrid_numerator=1 \
   --hybrid_denominator=1 \
   --seq_length=128 \
-  --local_batch_size=16 \
-  --global_batch_size=4096 \
-  --learning_rate=0.007 \
-  --max_steps=2000 \
+  --local_batch_size="${GPT_BERT_LOCAL_BATCH:-16}" \
+  --global_batch_size="${GPT_BERT_GLOBAL_BATCH:-4096}" \
+  --learning_rate="${GPT_BERT_LR:-0.007}" \
+  --max_steps="$MAX_STEPS" \
   --optimizer=lamb \
   --weight_decay=0.1 \
   --warmup_proportion=0.016 \
@@ -82,9 +96,10 @@ nohup torchrun --standalone --nnodes=1 --nproc_per_node=1 train_100m.py \
   --mask_random_p=0.1 \
   --mask_keep_p=0.1 \
   --mixed_precision \
-  --validate_every=200 \
-  --save_every=200 \
+  --validate_every="${GPT_BERT_VALIDATE_EVERY:-500}" \
+  --save_every="${GPT_BERT_SAVE_EVERY:-500}" \
   --seed=42 \
+  "${EXTRA_ARGS[@]}" \
   > "$LOG_FILE" 2>&1 &
 
 echo "PID=$!"

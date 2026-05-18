@@ -16,6 +16,7 @@ babylm-eval/
 # 训练 checkpoint（日志与 run_summary 可保留）
 gpt2-masked-objective/outputs/**/checkpoints/
 gpt2-masked-objective/outputs/**/final/
+babylm-strict-scratch/outputs/
 
 wandb/
 
