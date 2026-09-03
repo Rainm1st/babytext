@@ -1,35 +1,23 @@
-# 本仓库 = experiments/ 目录；不上传官方语料与超大文件，其余均提交
-
-# 模型权重 / 缓存 / tokenized 二进制
-**/.cache/
-**/local_hf_cache/
-**/models--*/
-**/snapshots/
+# Model weights, checkpoints, and generated training data
 *.bin
+*.pt
+*.pth
 *.safetensors
-gpt-bert-masked-focus-baseline/
-
-# 第三方 clone（用 scripts 安装）
-gpt-bert/
-babylm-eval/
-
-# 训练 checkpoint（日志与 run_summary 可保留）
-gpt2-masked-objective/outputs/**/checkpoints/
-gpt2-masked-objective/outputs/**/final/
-babylm-strict-scratch/outputs/
-
+checkpoints/
+outputs/
+results/
 wandb/
 
-# 密钥
+# Secrets and local environments
 .env
 .env.*
 hf_token.txt
-
-# Python / IDE
-__pycache__/
-*.py[cod]
 .venv/
 venv/
-.vscode/
+
+# Python and editor state
+__pycache__/
+*.py[cod]
 .idea/
+.vscode/
 .DS_Store
